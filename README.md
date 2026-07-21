@@ -7,9 +7,9 @@ Speed Charm Event is a game scripting language designed for game development.
 
 - Basic arithmetic operations (`+`, `-`, `*`, `/`, `%`)
 - System calls:
-  - `write`
-  - `read`
-  - `open`
+  - `__write__`
+  - `__read__`
+  - `__open__`
 
 ### Not Implemented
 
