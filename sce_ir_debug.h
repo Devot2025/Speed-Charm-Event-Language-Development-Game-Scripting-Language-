@@ -113,7 +113,7 @@ static inline void print_sce_ir(Sce_Binary_Machine_Instructions * sce_bm_inst, b
 		}
 		else if (next_->sce_bmr_code == E_SCE_BINARY_INST_IMOV__) {
 			printf(GET_PRINT_STR_SVR(next_->ope1));
-			printf("%u ", next_->icope2);
+			printf("%i ", next_->icope2);
 
 		}
 		else if (next_->sce_bmr_code == E_SCE_BINARY_INST_BMOV__) {
