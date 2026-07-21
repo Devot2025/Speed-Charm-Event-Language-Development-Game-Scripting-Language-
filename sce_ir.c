@@ -388,6 +388,11 @@ static int build_opt_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code
 
 	if (!ast) return -1;
 	if (is_sce_ast_type(ast, E_Sce_Ast_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Add_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Mul_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Sub_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Div_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Mod_Assigment)) return 1;
 
 	if (is_sce_ast_type(ast, E_Sce_Ast_Call_Function)) {
 		build_sce_binary_run_code_call_function(sce_bm_data, ast);
@@ -683,7 +688,6 @@ uint32_t build_sce_binary_run_code_expr_statement(Sce_Create_Binary_Machine_Code
 	if (is_sce_ast_type(ast, E_Sce_Ast_Expr)) {
 
 		int res = build_opt_sce_binary_run_code_expr_ope(sce_bm_data, ast->left);
-
 		if (res == -2) {
 			chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(SCE_VIRTUAL_REGISTER_RETURN, 0, E_SCE_BINARY_INST_DELETE_REGISTER__));
 			return 0;
@@ -744,6 +748,7 @@ void build_sce_binary_run_code_args(Sce_Create_Binary_Machine_Code_Data* sce_bm_
 }
 uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data* sce_bm_data, Sce_Ast_Node* ast) {
 	if (!ast)return 0;
+	//printf("DEBUG OUT %lu %lu\n", ast->data.ast_type, E_Sce_Ast_Add_Assigment);
 
 	if (is_sce_ast_type(ast, E_Sce_Ast_Call_Function)) {
 		return build_sce_binary_run_code_call_function(sce_bm_data, ast);
@@ -884,8 +889,8 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 		*/
 		uint32_t left_ = build_sce_binary_run_code_basic_symbol_iden(sce_bm_data, ast->left);
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
-		if (sce_bm_data->is_error) return 0;
 
+		if (sce_bm_data->is_error) return 0;
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_ADD__));
 		delete_sce_virtual_registers(sce_bm_data, 1);
 	}
