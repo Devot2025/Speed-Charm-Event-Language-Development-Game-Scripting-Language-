@@ -1,0 +1,15 @@
+#ifndef _MACRO_INF_H_
+#define _MACRO_INF_H_
+
+
+#define base_si_strap static inline
+#define GET_TEMPLATE_ERROR_STRING(err_str) "error : " err_str
+
+#define GET_TEMPLATE_OUT_STRING(out_str) "out : " out_str
+
+#define GET_TEMPLATE_WARING_STRING(waring_str) "waring : " waring_str
+
+#define SHIFT_POW_2(src) (1ull << src)
+
+#define FINAL__ 
+#endif // _MACRO_INF_H_

@@ -1,0 +1,25 @@
+#ifndef C_HEADER_HELPER_HINT_
+#define C_HEADER_HELPER_HINT_
+
+#ifdef __cplusplus
+
+#define _EXTERN_C_BEGIN_ extern "C" {
+#define _EXTERN_C_END_   }
+
+#else
+
+#define _EXTERN_C_BEGIN_
+#define _EXTERN_C_END_
+
+#endif
+
+
+#ifdef __cplusplus
+
+#define SET_NEW_TYPE_(type_) type_
+#else
+
+#define SET_NEW_TYPE_(type_) (type_)
+
+#endif
+#endif // C_HEADER_HELPER_HINT_

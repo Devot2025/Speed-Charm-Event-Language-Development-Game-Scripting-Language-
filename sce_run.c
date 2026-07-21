@@ -2,17 +2,17 @@
 #include "sce_system_call.h"
 #define GET_ERROR_STRING(dst, format, ...)\
 	do{\
-		uint32_t req = snprintf(NULL, 0, "error : "format, __VA_ARGS__);\
+		uint32_t req = snprintf(NULL, 0, "error : "format, ##__VA_ARGS__);\
 		req += 1;\
 		dst =\
 		smart_malloc(uint8_t, req);\
 		if (!dst) break;\
-		(void)snprintf(dst, req, "error : "format, __VA_ARGS__); \
+		(void)snprintf(dst, req, "error : "format, ##__VA_ARGS__); \
 	} while (0)
 
 #define get_vm_error_status(dst, format, ...)\
 	do{\
-		GET_ERROR_STRING((dst).vm_error_status.error_str, format, __VA_ARGS__);\
+		GET_ERROR_STRING((dst).vm_error_status.error_str, format, ##__VA_ARGS__);\
 		if(!(dst).vm_error_status.error_str) (dst).vm_error_status.error_vm_fallback_code = SCE_VM_FALLBACK_CODE;\
 	}while(0)
 
@@ -961,7 +961,7 @@ void system_call_sce_vm(Sce_Run_VM_Context* vm_context, Sce_Binary_Machine_Instr
 
 				get_vm_error_status(
 					*vm_context,
-					"Invalid argument type.",
+					"Invalid argument type."
 				);
 				break;
 			case 1:
@@ -1708,7 +1708,7 @@ void fmov_sce_vm(Sce_Run_VM_Context* sce_vm_context, Sce_Binary_Machine_Instruct
 void imov_sce_vm(Sce_Run_VM_Context* sce_vm_context, Sce_Binary_Machine_Instructions* sce_inst) {
 	Sce_Virutal_Register* svr1 =
 		get_svr(sce_vm_context, sce_inst->ope1);
-	uint32_t ibuf = sce_inst->icope2;
+	int64_t ibuf = sce_inst->icope2;
 	if (svr1) {
 		svr1->is_const_value = true;
 		svr1->sce_run_value.value_type = E_Sce_Run_Int_Value;

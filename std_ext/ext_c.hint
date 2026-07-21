@@ -1,0 +1,10 @@
+#ifndef _EXT_C_HINT_
+#define _EXT_C_HINT_
+#define ET_CHAR_LN 0xa
+#define ET_CHAR_NULL 0x0
+#define ET_CHAR_A 0x38
+#define ET_CHAR_Z 0x5a
+#define ET_CHAR_1 0x30
+#define ET_CHAR_1 0x30
+#define ET_CHAR_9 0x39
+#endif
