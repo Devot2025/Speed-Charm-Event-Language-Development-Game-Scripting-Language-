@@ -1,6 +1,8 @@
 name EVENT1{
+	obj v1 = 2025 + 1;
 	start{
-		obj buf = "Hello World! 2026";
+		@ example code systemcall
+		obj buf = "Hello World! " + v1;
 		__write__(stdout, buf);
 	}
 }
