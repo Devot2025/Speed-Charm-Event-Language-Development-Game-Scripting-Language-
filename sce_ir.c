@@ -11,7 +11,7 @@
 #define get_now_register(src_sce_bm_data) (src_sce_bm_data).sv_registers
 static const uint8_t chain_fld_name[] = "";
 #define CHAIN_FILED_NAMES chain_fld_name
-
+#define is_register_return(reg_id) reg_id == SCE_VIRTUAL_REGISTER_RETURN
 static Object_Name_Chain* new_object_name(Object_Name_Chain* now_, const uint8_t* name_) {
 	Object_Name_Chain* new_ = smart_malloc(Object_Name_Chain, 1);
 	if (!new_) return now_;
@@ -224,6 +224,16 @@ static void save_now_sce_virtual_register(Sce_Create_Binary_Machine_Code_Data* s
 
 }
 
+static uint8_t* new_nest_symbol_name(uint8_t* name1_, const uint8_t* name2_) {
+	size_t len1_ = safety_strlen(name1_);
+	size_t len2_ = safety_strlen(name2_);
+	uint8_t* new_ = smart_malloc(uint8_t, len1_ + len2_ + 1);
+	if (!new_) return NULL;
+	memcpy(new_, name1_, len1_);
+	memcpy(new_ + len1_, name2_, len2_);
+	new_[len1_ + len2_] = '\0';
+	return new_;
+}
 static uint32_t build_sce_binary_run_code_call_function(Sce_Create_Binary_Machine_Code_Data* sce_bm_data, Sce_Ast_Node* ast) {
 
 	uint32_t sys = get_system_call_idx(ast->left);
@@ -393,6 +403,7 @@ static int build_opt_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code
 	if (is_sce_ast_type(ast, E_Sce_Ast_Sub_Assigment)) return 1;
 	if (is_sce_ast_type(ast, E_Sce_Ast_Div_Assigment)) return 1;
 	if (is_sce_ast_type(ast, E_Sce_Ast_Mod_Assigment)) return 1;
+	if (is_sce_ast_type(ast, E_Sce_Ast_Var_Decl)) return 1;
 
 	if (is_sce_ast_type(ast, E_Sce_Ast_Call_Function)) {
 		build_sce_binary_run_code_call_function(sce_bm_data, ast);
@@ -688,6 +699,7 @@ uint32_t build_sce_binary_run_code_expr_statement(Sce_Create_Binary_Machine_Code
 	if (is_sce_ast_type(ast, E_Sce_Ast_Expr)) {
 
 		int res = build_opt_sce_binary_run_code_expr_ope(sce_bm_data, ast->left);
+		//printf("%d", res);
 		if (res == -2) {
 			chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(SCE_VIRTUAL_REGISTER_RETURN, 0, E_SCE_BINARY_INST_DELETE_REGISTER__));
 			return 0;
@@ -748,7 +760,6 @@ void build_sce_binary_run_code_args(Sce_Create_Binary_Machine_Code_Data* sce_bm_
 }
 uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data* sce_bm_data, Sce_Ast_Node* ast) {
 	if (!ast)return 0;
-	//printf("DEBUG OUT %lu %lu\n", ast->data.ast_type, E_Sce_Ast_Add_Assigment);
 
 	if (is_sce_ast_type(ast, E_Sce_Ast_Call_Function)) {
 		return build_sce_binary_run_code_call_function(sce_bm_data, ast);
@@ -853,7 +864,19 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Var_Decl)) {
-		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi_s(0, ast->data.buf, E_SCE_BINARY_INST_ALLOC__));
+		uint8_t* value_ = (uint8_t*)ast->data.buf;
+
+		sce_bm_data->is_error = set_new_object_name(sce_bm_data, value_);
+		if (sce_bm_data->is_error) {
+			printf(already_name_value_error, value_);
+			sce_bm_data->is_error = true;
+
+			return 0;
+		}
+		uint8_t* nest_value_ = new_nest_symbol_name(value_, sce_bm_data->now_->name_);
+		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi_s(0, nest_value_, E_SCE_BINARY_INST_ALLOC__));
+
+		sce_bm_data->is_error = false;
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Assigment)) {
 		/*
@@ -956,6 +979,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Left_Shift)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_SHL__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -964,6 +988,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Right_Shift)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_SHR__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -972,6 +997,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 		}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Bit_And)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_AND__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -980,6 +1006,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Bit_Or)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_OR__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -988,6 +1015,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Bit_Xor)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_XOR__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -996,6 +1024,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Bit_Not)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_NOT__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -1003,6 +1032,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Add)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_ADD__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -1017,6 +1047,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Mul)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_MUL__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -1024,6 +1055,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Div)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_DIV__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -1031,6 +1063,7 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 	}
 	else if (is_sce_ast_type(ast, E_Sce_Ast_Mod)) {
 		uint32_t left_ = build_sce_binary_run_code_basic_const_iden(sce_bm_data, ast->left);
+
 		uint32_t right_ = build_sce_binary_run_code_basic_iden(sce_bm_data, ast->right);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(left_, right_, E_SCE_BINARY_INST_MOD__));
 		delete_sce_virtual_register(sce_bm_data);
@@ -1042,16 +1075,6 @@ uint32_t build_sce_binary_run_code_expr_ope(Sce_Create_Binary_Machine_Code_Data*
 
 	}
 	return sce_bm_data->sv_registers;
-}
-static uint8_t* new_nest_symbol_name(uint8_t* name1_, const uint8_t* name2_) {
-	size_t len1_ = safety_strlen(name1_);
-	size_t len2_ = safety_strlen(name2_);
-	uint8_t* new_ = smart_malloc(uint8_t, len1_ + len2_ + 1);
-	if (!new_) return NULL;
-	memcpy(new_, name1_, len1_);
-	memcpy(new_ + len1_, name2_, len2_);
-	new_[len1_ + len2_] = '\0';
-	return new_;
 }
 /*
 * ADD-----ADD-----------ADD---iden
@@ -1070,7 +1093,7 @@ uint32_t build_sce_binary_run_code_basic_symbol_iden(Sce_Create_Binary_Machine_C
 		uint8_t* value_ = (uint8_t*)ast->data.buf;
 		Nest_Object_Chain* chain_ = search_object_name_in_nest_object_chain(sce_bm_data, value_);
 		if (!chain_) {
-			printf(already_name_value_error, value_);
+			printf(not_defined_name_value_error, value_);
 			sce_bm_data->is_error = true;
 			return 0;
 		}
@@ -1116,7 +1139,12 @@ uint32_t build_sce_binary_run_code_basic_symbol_iden_and_decl(Sce_Create_Binary_
 		uint8_t* value_ = (uint8_t*)ast->data.buf;
 
 		sce_bm_data->is_error = set_new_object_name(sce_bm_data, value_);
-		if (sce_bm_data->is_error) return 0;
+		if (sce_bm_data->is_error) {
+			printf(already_name_value_error, value_);
+			sce_bm_data->is_error = true;
+
+			return 0;
+		}
 		uint8_t* nest_value_ = new_nest_symbol_name(value_, sce_bm_data->now_->name_);
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi_s(0, nest_value_, E_SCE_BINARY_INST_ALLOC__));
 
@@ -1255,5 +1283,12 @@ uint32_t build_sce_binary_run_code_basic_const_iden(Sce_Create_Binary_Machine_Co
 		chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi_s(ope1, nest_value_, E_SCE_BINARY_INST_MMOV__));
 		return sce_bm_data->sv_registers;
 	}
-	else return build_sce_binary_run_code_expr_ope(sce_bm_data, ast);
+	else {
+		uint32_t left_ = build_sce_binary_run_code_expr_ope(sce_bm_data, ast);
+		if (is_register_return(left_)) {
+			chain_sce_bmi_of_create_bm(sce_bm_data, gen_sce_bmi(now_sce_virtual_register(sce_bm_data), left_, E_SCE_BINARY_INST_RMOV__));
+			left_ = now_sce_virtual_register(sce_bm_data);
+		}
+		return left_;
+	}
 }
