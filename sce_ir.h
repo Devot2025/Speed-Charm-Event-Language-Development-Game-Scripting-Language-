@@ -46,6 +46,7 @@ CONVERT_FUNC(E_SCE_BINARY_INST_CALL__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_JMP__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_PHASE__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_SYSTEM_CALL__),\
+CONVERT_FUNC(E_SCE_BINARY_INST_BUILT_IN_CALL__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_LABEL__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_ALLOC__),\
 CONVERT_FUNC(E_SCE_BINARY_INST_NAME_REPEAT__),\
@@ -66,7 +67,10 @@ static const char call_write_string__[] = "__write__";
 static const char call_read_string__[]  = "__read__";
 static const char call_open_string__[]  = "__open__";
 static const char call_close_string__[] = "__close__";
-static const char call_type_string__[] = "__type__";
+static const char call_type_string__[]  = "type";
+static const char call_len_string__[]   = "len";
+static const char call_swap_string__[]   = "swap";
+static const char call_sum_string__[]   = "sum";
 
 
 static const char global_label[]    = "%global";
@@ -75,9 +79,9 @@ static const char main_label[]      = "%main";
 static const char end_label[]       = "%end";
 static const char exit_label[]      = "%exit";
 static const char if_label_prefix[] = "%%if%lu";
-static const char left_hand_value_error[]        = "The left-hand side value must be a substituted value.";
-static const char already_name_value_error[]     = "%s is already defined.";
-static const char not_defined_name_value_error[] = "%s is not defined.";
+static const char left_hand_value_error[]        = "Error : The left-hand side value must be a substituted value.";
+static const char already_name_value_error[]     = "Error : %s is already defined.";
+static const char not_defined_name_value_error[] = "Error : %s is not defined.";
 #define IF_LABEL_PREFIX_SIZE sizeof(if_label_prefix) - 1
 #define START_LABEL_PREFIX_SIZE sizeof(start_label) - 1
 #define MAIN_LABEL_PREFIX_SIZE sizeof(main_label) - 1
@@ -88,11 +92,13 @@ static const char not_defined_name_value_error[] = "%s is not defined.";
 typedef enum Sce_Binary_Instruction {
 	SET_SCE_BINARY_MACHINE_TYPE(CONVERT_DEFINE)
 }Sce_Binary_Instruction;
-#define SYSTEM_CALL_NULL  0x0
-#define SYSTEM_CALL_WRITE 0x1
-#define SYSTEM_CALL_READ  0x2
-#define SYSTEM_CALL_OPEN  0x3
+#define SYSTEM_CALL_NULL    0x0
+#define SYSTEM_CALL_WRITE   0x1
+#define SYSTEM_CALL_READ    0x2
+#define SYSTEM_CALL_OPEN    0x3
 #define SYSTEM_CALL_CLOASE  0x4
+#define SYSTEM_CALL_TYPE    0x5
+#define SYSTEM_CALL_LEN     0x6
 #define SYSTEM_CALL_WRITE_STRING call_write_string__
 #define SYSTEM_CALL_READ_STRING  call_read_string__
 #define SYSTEM_CALL_OPEN_STRING  call_open_string__
@@ -167,18 +173,27 @@ typedef struct Sce_Create_Binary_Machine_Code_Data {
 	size_t now_function_name_size_;
 
 }Sce_Create_Binary_Machine_Code_Data;
+/*
+* 0 ERROR REGISTER
+* 1 ~ 127
+* RETURN
+* 128
+* 
+*/
 
 #define SCE_VIRTUAL_REGISTER_MAX 127
-#define SCE_VIRTUAL_REGISTER_RETURN 128
+#define SCE_VIRTUAL_GENERAL_REGISTER_MAX 128
+#define SCE_VIRTUAL_REGISTER_RETURN SCE_VIRTUAL_GENERAL_REGISTER_MAX
 #define SCE_VIRTUAL_REGISTER_CMP_RETURN SCE_VIRTUAL_REGISTER_RETURN
-#define SCE_VIRTUAL_STACK_MIN 129
+#define SCE_VIRTUAL_REGISTER_MAX_ 129
+#define SCE_VIRTUAL_STACK_MIN SCE_VIRTUAL_REGISTER_MAX_
 #define GET_SCE_STACK_START_OFFSET(idx) idx - SCE_VIRTUAL_STACK_MIN
 
 sce_si_strap uint32_t now_sce_virtual_register(Sce_Create_Binary_Machine_Code_Data* sce_bm_data) {
 	return sce_bm_data->sv_registers;
-
 }
 sce_si_strap uint32_t new_sce_virtual_register(Sce_Create_Binary_Machine_Code_Data* sce_bm_data) {
+	//if (sce_bm_data->sv_registers + 1 == SCE_VIRTUAL_REGISTER_CMP_RETURN) sce_bm_data->sv_registers++;
 	return ++sce_bm_data->sv_registers;
 }
 
